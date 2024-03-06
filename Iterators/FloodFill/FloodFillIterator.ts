@@ -313,11 +313,6 @@ export default class FloodFillIterator {
     public *IterateLocations() {
         while(!this.Queue.IsEmpty){
             const blocks: Block[] = this.Queue.DequeueChunk(this.YieldedChunkSize);
-
-            // Artificial wait
-            if (Math.random() < 0.75){
-                yield null;
-            }
             
             // Queue up more
             for (const block of blocks){

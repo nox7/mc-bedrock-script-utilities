@@ -1,9 +1,9 @@
 import { Block, Vector, Vector3 } from "@minecraft/server"
-import { Queue } from "../DataStructures/Queue.js";
-import { VectorUtils } from "../Vector/VectorUtils.js";
+import { Queue } from "../../DataStructures/Queue.js";
+import { VectorUtils } from "../../Vector/VectorUtils.js";
 import { FloodFillIteratorOptions } from "./FloodFillIIteratorOptions.js";
-import { BlockSafetyCheckerUtility } from "../BlockSafetyChecker/BlockSafetyCheckerUtility.js";
-import { BlockSafetyCheckerOptions } from "../BlockSafetyChecker/BlockSafetyCheckerOptions.js";
+import { BlockSafetyCheckerUtility } from "../../BlockSafetyChecker/BlockSafetyCheckerUtility.js";
+import { BlockSafetyCheckerOptions } from "../../BlockSafetyChecker/BlockSafetyCheckerOptions.js";
 
 /**
  * Flood-fill style BFS iterator that will iterate over "passable" blocks starting at a center location. It will also iterate over any blocks

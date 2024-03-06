@@ -71,3 +71,13 @@ If you set FloodFillOptions.AllowYAxisFlood to `true`, then the nature of implem
 
 ## Additional Properties
 To see the full list of properties and their documentation, open the FloodFillIteratorOptions.ts file - all options you can set are documented.
+
+## Examples of Use + Visualization
+![image](https://github.com/nox7/mc-bedrock-script-utilities/assets/17110935/b771fa36-7cc9-4144-9b77-5895f3f3bfa0)
+![image](https://github.com/nox7/mc-bedrock-script-utilities/assets/17110935/67c8ad96-24b1-42c4-91c1-8b594d73ec5b)
+![image](https://github.com/nox7/mc-bedrock-script-utilities/assets/17110935/bb55d78a-9403-435d-ac80-2328bac32a2f)
+
+Search visualization
+
+![image](https://github.com/nox7/mc-bedrock-script-utilities/assets/17110935/d9c749b1-6e59-4872-a9dd-cb463a7b80bb)
+

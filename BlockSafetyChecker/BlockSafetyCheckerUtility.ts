@@ -1,7 +1,6 @@
 import { Block } from "@minecraft/server";
 import { BlockSafetyCheckerOptions } from "./BlockSafetyCheckerOptions";
 import { BlockSafetyCheckResult } from "./BlockSafetyCheckResult";
-import Debug from "../../Debug/Debug";
 
 /**
  * A set of independent utilies that can check if a block is safe for movement

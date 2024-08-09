@@ -1,0 +1,16 @@
+{
+  "name": "mc-bedrock-script-utilities",
+  "version": "1.0.0",
+  "description": "Utility scripts and systems for Minecraft's JavaScript Bedrock API - written in TypeScript.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@minecraft/common": "^1.2.0",
+    "@minecraft/server": "^1.12.0-beta.1.21.2-stable"
+  }
+}

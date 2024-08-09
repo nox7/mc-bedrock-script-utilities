@@ -22,6 +22,11 @@ export class BlockSafetyCheckerUtility{
                 blockBelow = block.below(1);
             }catch(e){}
             if (blockBelow !== undefined){
+                if(options.AllowYAxisFlood) {
+                    const result: BlockSafetyCheckResult = new BlockSafetyCheckResult();
+                    result.IsSafe = true;
+                    return result;
+                }
                 if (BlockSafetyCheckerUtility.IsPassable(blockBelow, options)){
                     // Check the block even further below
                     let blockFurtherBelow: Block | undefined;
@@ -38,13 +43,13 @@ export class BlockSafetyCheckerUtility{
                         }else{
                             const result: BlockSafetyCheckResult = new BlockSafetyCheckResult();
                             // Verify we won't fall into lava
-                            if (BlockSafetyCheckerUtility.IsLava(blockFurtherBelow)){
+                            if (BlockSafetyCheckerUtility.IsLava(blockFurtherBelow, options)){
                                 result.IsSafe = false;
                                 result.HasLavaBelow = true;
                                 return result;
                             }
 
-                            if (BlockSafetyCheckerUtility.IsWater(blockFurtherBelow)){
+                            if (BlockSafetyCheckerUtility.IsWater(blockFurtherBelow, options)){
                                 result.IsSafe = false;
                                 result.HasWaterBelow = false;
                                 return result;
@@ -69,14 +74,14 @@ export class BlockSafetyCheckerUtility{
                     const result: BlockSafetyCheckResult = new BlockSafetyCheckResult();
 
                     // Is it lava or water?
-                    if (BlockSafetyCheckerUtility.IsLava(blockBelow)){
+                    if (BlockSafetyCheckerUtility.IsLava(blockBelow, options)){
                         // Cannot go to block. It has lava below it
                         result.IsSafe = false;
                         result.HasLavaBelow = true;
                         return result;
                     }
 
-                    if (BlockSafetyCheckerUtility.IsWater(blockBelow)){
+                    if (BlockSafetyCheckerUtility.IsWater(blockBelow, options)){
                         result.IsSafe = false;
                         result.HasWaterBelow = false;
                         return result;
@@ -176,6 +181,11 @@ export class BlockSafetyCheckerUtility{
      * @param block 
      */
     private static IsPassable(block: Block, options: BlockSafetyCheckerOptions): boolean{
+
+        if (!block.isValid()){
+            return false;
+        }
+
         if (options.TypeIdsToConsiderPassable !== undefined && options.TypeIdsToConsiderPassable.indexOf(block.typeId) > -1){
             return true;
         }
@@ -216,15 +226,15 @@ export class BlockSafetyCheckerUtility{
      * Checks if a provided block is lava
      * @param block 
      */
-    private static IsLava(block: Block): boolean{
-        return block.typeId === "minecraft:lava";
+    private static IsLava(block: Block, options: BlockSafetyCheckerOptions): boolean{
+        return block.typeId === "minecraft:lava" && !options.TypeIdsToConsiderPassable.includes(block.typeId);
     }
 
     /**
      * Checks if a provided block is water
      * @param block 
      */
-    private static IsWater(block: Block): boolean{
-        return block.typeId === "minecraft:water";
+    private static IsWater(block: Block, options: BlockSafetyCheckerOptions): boolean{
+        return block.typeId === "minecraft:water" && !options.TypeIdsToConsiderPassable.includes(block.typeId);
     }
 }

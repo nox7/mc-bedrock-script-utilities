@@ -8,6 +8,7 @@ To customize the pathfinder and its settings use the AStarOptions.ts class. This
 
 ## Usage
 
+### A* Pathfinding
 ```ts
 const options: AStarOptions = new AStarOptions({x:0, y:0, z:0}, {x: 10, y:0, z:10}, world.getDimension("overworld"));
 options.TypeIdsToConsiderPassable = ["minecraft:air"];
@@ -25,3 +26,32 @@ const blockPath: Block[] = await aStar.Pathfind();
 
 // blockPath is now a path from start to finish
 ```
+
+### Bi-directional A* Pathfinding
+```ts
+const options: AStarOptions = new AStarOptions({x:0, y:0, z:0}, {x: 10, y:0, z:10}, world.getDimension("overworld"));
+options.TypeIdsToConsiderPassable = ["minecraft:air"];
+options.TypeIdsThatCannotBeJumpedOver = ["minecraft:oak_fence"];
+
+let aStar: BidirectionalAStar;
+try{
+    aStar = new BidirectionalAStar(this.PathfindingOptions);
+}catch(e){
+    // Failed to construct - start/end blocks probably not loaded
+    return false;
+}
+
+const blockPath: Block[] = await aStar.Pathfind();
+
+// blockPath is now a path from start to finish
+```
+
+Search visualization
+
+A* Pathfinding
+
+![AStarPros](https://github.com/user-attachments/assets/929bbe55-3aab-4601-88cc-2b83f975831d)
+
+Bi-directional A* Pathfinding
+
+![BidirectionalAStarPros](https://github.com/user-attachments/assets/a6d48e22-90fe-493c-9418-bd6b976c9a87)

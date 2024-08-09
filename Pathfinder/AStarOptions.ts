@@ -42,10 +42,14 @@ export class AStarOptions{
      */
     public TypeIdsThatCannotBeJumpedOver: string[] = [];
     /**
-     * Allows the Flood-Fill iterator to climb up or down on the Y axis without the algorithm to determine if 
+     * Allows the pathfinding to climb up or down on the Y axis without the algorithm to determine if 
      * it is a safe fall or a reasonable jump for an entity.
      */
     public AllowYAxisFlood: boolean = false;
+    /**
+     * Mode for debugging using Structure Void Blocks to visualize how the pathfinding traverses.
+     */
+    public DebugMode: boolean = false;
 
     public constructor(startLocation: Vector3, goalLocation: Vector3, dimension: Dimension){
         this.StartLocation = startLocation;

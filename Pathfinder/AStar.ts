@@ -1,24 +1,28 @@
-import { Block, Vector, Vector3, system } from "@minecraft/server";
+import { Block, Vector3, system } from "@minecraft/server";
 import CuboidRegion from "../Region/CuboidRegion";
 import { AStarOptions } from "./AStarOptions";
-import { VectorUtils } from "../Vector/VectorUtils";
 import { BlockSafetyCheckerUtility } from "../BlockSafetyChecker/BlockSafetyCheckerUtility";
 import { BlockSafetyCheckerOptions } from "../BlockSafetyChecker/BlockSafetyCheckerOptions";
 import { BlockSafetyCheckResult } from "../BlockSafetyChecker/BlockSafetyCheckResult";
 import { IAStarNode } from "./Interfaces/IAStarNode";
 import { ClosedAStarLocations } from "./Types/ClosedAStarLocations";
+import { Vector } from "../Vector/Vector";
+import { MinecraftBlockTypes} from "../vanilla-types/index";
 
 /**
  * Implementation of the A* algorithm for Minecraft
  */
-export default class AStar{
+export class AStar{
 
     private Options: AStarOptions;
     private StartBlock: Block;
     private EndBlock: Block;
+    private TotalDebugBlocksCreated: Set<Block>;
+
 
     public constructor(options: AStarOptions){
         this.Options = options;
+        this.TotalDebugBlocksCreated = new Set();
 
         let startBlock: Block | undefined;
         let endBlock: Block | undefined;
@@ -53,7 +57,7 @@ export default class AStar{
             blockPath.push(currentNode.Block);
             currentNode = currentNode.ParentNode;
         }
-
+        this.ClearDebugBlocks();
         return blockPath.reverse();
     }
 
@@ -80,16 +84,17 @@ export default class AStar{
 
             // Check if we have considered too many nodes and the path may be too difficult or impossible to get to
             if (Object.keys(closedListLocations).length >= this.Options.MaximumNodesToConsider){
+                this.ClearDebugBlocks();
                 throw "Maximum number of nodes considered. MaximumNodesToConsider limit option hit.";
             }
 
             // Find the next node in the openList with the lowest F cost
             const nextIndex: number = this.GetIndexOfNodeWithLowestFCost(openList);
             const nextNode: IAStarNode = openList[nextIndex];
-            const locationHash: string = VectorUtils.GetAsString(nextNode.Block.location);
+            const locationHash: string = Vector.toString(nextNode.Block.location);
 
             // Check if the nextNode is the EndBlock
-            if (VectorUtils.AreEqual(nextNode.Block, this.EndBlock)){
+            if (Vector.equals(nextNode.Block, this.EndBlock)){
                 return goalNodePromiseResolve(nextNode);
             }
 
@@ -108,6 +113,7 @@ export default class AStar{
             safetyCheckOptions.TagsToConsiderPassable = this.Options.TagsToConsiderPassable;
             safetyCheckOptions.TypeIdsToConsiderPassable = this.Options.TypeIdsToConsiderPassable;
             safetyCheckOptions.TypeIdsThatCannotBeJumpedOver = this.Options.TypeIdsThatCannotBeJumpedOver;
+            safetyCheckOptions.AllowYAxisFlood = this.Options.AllowYAxisFlood;
 
             for (const location of surroundingLocations){
                 let blockAtLocation: Block | undefined;
@@ -117,13 +123,20 @@ export default class AStar{
 
                 if (blockAtLocation !== undefined && blockAtLocation.isValid()){
                     // Is it the block we're looking for?
-                    if (VectorUtils.AreEqual(location, this.Options.GoalLocation)){
+                    if (Vector.equals(location, this.Options.GoalLocation)){
                         // Add it regardless of safety
                         surroundingBlocks.push(blockAtLocation);
                     }else{
                         // Check it is safe to move to, fall down from, or jump ontop of
                         const safetyCheckResult: BlockSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(blockAtLocation, safetyCheckOptions);
+
+                        // Adrian - The only thing we need is to make it move anywhere, and just add collision detection.
                         if (safetyCheckResult.IsSafe){
+                            if(safetyCheckOptions.AllowYAxisFlood) {
+                                surroundingBlocks.push(blockAtLocation);
+                                surroundingBlocks.push(<Block>blockAtLocation.below(1));
+                                surroundingBlocks.push(<Block>blockAtLocation.above(1));
+                            }
                             // Check if it's safe to fall from
                             if (safetyCheckResult.CanSafelyFallFrom){
                                 // Use the block below blockAtLocation
@@ -138,7 +151,6 @@ export default class AStar{
                         }
                     }
                 }
-
                 yield;
             }
 
@@ -152,10 +164,13 @@ export default class AStar{
                     GCost: nextNode.GCost + 1,// this.CalculateGCost(surroundingBlock),
                     HCost: this.CalculateHHeuristic(surroundingBlock),
                 };
-                const surroundingBlockLocationHash: string = VectorUtils.GetAsString(surroundingBlock.location);
+                const surroundingBlockLocationHash: string = Vector.toString(surroundingBlock.location);
+
+                // Creates a path traces using Structure Void whenever in debug mode
+                this.SetDebugBlock(surroundingBlock);
 
                 // Check if this block is the end block
-                if (VectorUtils.AreEqual(surroundingBlock, this.EndBlock)){
+                if (Vector.equals(surroundingBlock, this.EndBlock)){
                     return goalNodePromiseResolve(surroundingNode);
                 }
 
@@ -186,7 +201,43 @@ export default class AStar{
         }
 
         // Out of options if we get here without returning
+        this.ClearDebugBlocks();
         throw "No path could be found to the destination. All adjacent moveable nodes to consider has been exhausted.";
+    }
+
+    /**
+     * Sets a debug block (structure void) to visualize how the pathfinding traverses considering the passable blocks.
+     * @param block The block to put the debug blocks in.
+     */
+    private SetDebugBlock(block: Block) {
+        if(!this.Options.DebugMode) return;
+        if(!(Vector.toString(block.location) 
+            in 
+            [...this.TotalDebugBlocksCreated].map((b: Block)=> Vector.toString(b.location)))
+        ) this.TotalDebugBlocksCreated.add(block);
+        this.Options.Dimension.setBlockType(block, MinecraftBlockTypes.StructureVoid);
+    }
+
+    /**
+     * Clears all the placed debug blocks from the pathfinding execution.
+     * @returns 
+     */
+    private ClearDebugBlocks() {
+        if(!this.Options.DebugMode) return;
+        const locs = this.TotalDebugBlocksCreated;
+        const safetyCheckOptions = new BlockSafetyCheckerOptions();
+        safetyCheckOptions.TagsToConsiderPassable = this.Options.TagsToConsiderPassable;
+        safetyCheckOptions.TypeIdsToConsiderPassable = this.Options.TypeIdsToConsiderPassable;
+        safetyCheckOptions.TypeIdsThatCannotBeJumpedOver = this.Options.TypeIdsThatCannotBeJumpedOver;
+        safetyCheckOptions.AllowYAxisFlood = this.Options.AllowYAxisFlood;
+        for(const v of locs){
+            system.run(() => {
+                const vx = v.location;
+                if(Vector.equals(vx, this.Options.StartLocation) || Vector.equals(vx, this.Options.GoalLocation)) return
+                if(!v.matches(MinecraftBlockTypes.StructureVoid)) return;
+                this.Options.Dimension.setBlockType(vx, MinecraftBlockTypes.Air);
+            });
+        }
     }
 
     /**
@@ -200,7 +251,7 @@ export default class AStar{
         for (const index in listOfNodes){
             const indexNumber: number = parseInt(index);
             const nodeInList: IAStarNode = listOfNodes[indexNumber];
-            if (VectorUtils.AreEqual(node.Block, nodeInList.Block)){
+            if (Vector.equals(node.Block, nodeInList.Block)){
                 return indexNumber;
             }
         }

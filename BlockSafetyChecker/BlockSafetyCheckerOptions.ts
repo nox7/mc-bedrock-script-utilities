@@ -6,6 +6,10 @@ export class BlockSafetyCheckerOptions{
      */
     public EntityHeight: number = 2;
     /**
+     * State for ignoring all the BlockSafetyCheckerOptions if this flag is true, else just consider BlockSafety.
+     */
+    public AllowYAxisFlood: boolean = false;
+    /**
      * A list of type Ids to consider passable/walk-through-able. Usually "minecraft:air", grass, flowers, etc.
      */
     public TypeIdsToConsiderPassable: string[] = [];

@@ -1,6 +1,6 @@
-import { Block, Vector, Vector3 } from "@minecraft/server"
+import { Block, Vector3 } from "@minecraft/server"
 import { Queue } from "../../DataStructures/Queue.js";
-import { VectorUtils } from "../../Vector/VectorUtils.js";
+import { Vector } from "../../Vector/Vector.js";
 import { FloodFillIteratorOptions } from "./FloodFillIIteratorOptions.js";
 import { BlockSafetyCheckerUtility } from "../../BlockSafetyChecker/BlockSafetyCheckerUtility.js";
 import { BlockSafetyCheckerOptions } from "../../BlockSafetyChecker/BlockSafetyCheckerOptions.js";
@@ -14,7 +14,7 @@ import { BlockSafetyCheckerOptions } from "../../BlockSafetyChecker/BlockSafetyC
  * 
  * This iterator does not iterate up or down on the Y axis _unless_ the entity needs to jump up a block or jump down a block safely.
  */
-export default class FloodFillIterator {
+export class FloodFillIterator {
 
     private Queue: Queue<Block> = new Queue<Block>();
     private Options: FloodFillIteratorOptions;
@@ -70,7 +70,7 @@ export default class FloodFillIterator {
      * @returns 
      */
     private HasBlockLocationBeenClosed(block: Block): boolean{
-        return VectorUtils.GetAsString(block.location) in this.ClosedList;
+        return Vector.toString(block.location) in this.ClosedList;
     }
 
     /**
@@ -79,7 +79,7 @@ export default class FloodFillIterator {
      * @returns 
      */
     private HasLocationBeenClosed(location: Vector3): boolean{
-        return VectorUtils.GetAsString(location) in this.ClosedList;
+        return Vector.toString(location) in this.ClosedList;
     }
 
     /**
@@ -88,7 +88,7 @@ export default class FloodFillIterator {
      * @returns 
      */
     private AddLocationToClosedList(location: Vector3): void{
-        this.ClosedList[VectorUtils.GetAsString(location)] = true;
+        this.ClosedList[Vector.toString(location)] = true;
     }
 
     /**

@@ -13,12 +13,12 @@ The simple way (but not usually performant, and will cause Minecraft's Watchdog 
 const startLocation: Vector3 = {x: 0, y: 0, z: 0};
 const dimension: Dimension = world.getDimension("overworld");
 const maxDistance: number = 15; // Search within 15 blocks
-const floodFillOptions = new FloodFillOptions(startLocation, dimension, maxDistance);
+const floodFillOptions = new FloodFillIteratorOptions(startLocation, dimension, maxDistance);
 floodFillOptions.TypeIdsToConsiderPassable = ["minecraft:air"];
 floodFillOptions.TypeIdsToAlwaysInclude = ["minecraft:stone"];
 const floodFillIterator = new FloodFillIterator(floodFillOptions);
 
-for (const block of floodFillIterator){
+for (const block of floodFillIterator.IterateLocations()){
     if (block !== null & block.isValid()){
         // Do things with "block"
         // It will either be "air" or "stone" due to the TypeId options we set above
@@ -31,17 +31,17 @@ However, for large regions that could cause a few ms of spike and would not be p
 const startLocation: Vector3 = {x: 0, y: 0, z: 0};
 const dimension: Dimension = world.getDimension("overworld");
 const maxDistance: number = 15; // Search within 15 blocks
-const floodFillOptions = new FloodFillOptions(startLocation, dimension, maxDistance);
+const floodFillOptions = new FloodFillIteratorOptions(startLocation, dimension, maxDistance);
 floodFillOptions.TypeIdsToConsiderPassable = ["minecraft:air"];
 floodFillOptions.TypeIdsToAlwaysInclude = ["minecraft:stone"];
 
 function *FindFirstStoneBlock(
     blockFoundResolve: (block: Block | null) => void, 
-    floodFillOptions: FloodFillOptions
+    floodFillOptions: FloodFillIteratorOptions
     ){
     let blockThatWasFound: Block | null = null;
     const floodFillIterator = new FloodFillIterator(floodFillOptions);
-    for (const block of floodFillIterator){
+    for (const block of floodFillIterator.IterateLocations()){
         if (block !== null & block.isValid()){
             if (block.typeId === "minecraft:stone"){
                 blockThatWasFound = block;

@@ -13,6 +13,8 @@ import { MinecraftBlockTypes} from "../vanilla-types/index";
  * Implementation of the Bidirectional A* algorithm for Minecraft
  */
 
+//! Update it to mc_bedrock_utilities repository.
+
 //! Use Hashmap instead of list, since most of the needed operations are lookup.
 export class BidirectionalAStar{
 
@@ -23,7 +25,7 @@ export class BidirectionalAStar{
 
     public constructor(options: AStarOptions){
         this.Options = options;
-        this.TotalDebugBlocksCreated = new Set();``
+        this.TotalDebugBlocksCreated = new Set();
         let startBlock: Block | undefined;
         let endBlock: Block | undefined;
         try{
@@ -87,7 +89,6 @@ export class BidirectionalAStar{
         let reverseSurroundingBlocks: Block[] = [];
     
         while (openList.length > 0 && reverseOpenList.length > 0) {
-    
             if (Object.keys(closedListLocations).length >= this.Options.MaximumNodesToConsider ||
                 Object.keys(reverseClosedListLocations).length >= this.Options.MaximumNodesToConsider) {
                 this.ClearDebugBlocks();
@@ -111,7 +112,7 @@ export class BidirectionalAStar{
                     currentNode = currentNode.ParentNode;
                     yield;
                 }
-                nodeList = nodeList.reverse();
+                nodeList = [nodeList[0], nodeList[nodeList.length - 1]];
                 currentNode = reverseNextNode;
                 while (currentNode !== null) {
                     if(!this.GetIndexOfNodeIfInList(currentNode, nodeList)) nodeList.push(currentNode);
@@ -124,14 +125,24 @@ export class BidirectionalAStar{
             openList.splice(nextIndex, 1);
             closedListLocations[locationHash] = nextNode;
     
-            const surroundingLocations: Vector3[] = CuboidRegion.FromCenterLocation(nextNode.Block.location, 1, true).GetAllLocationsInRegion();
-            surroundingBlocks = []
+            let surroundingLocations: Vector3[];
+            if(!this.Options.AllowYAxisFlood) {
+                surroundingLocations = CuboidRegion.FromCenterLocation(nextNode.Block.location, 1, true).GetAllLocationsInRegion();
+            } else {
+                surroundingLocations = CuboidRegion.GetAdjacentPositions(nextNode.Block.location, 1);
+            }
+            surroundingBlocks = [];
             
             reverseOpenList.splice(reverseNextIndex, 1);
             reverseClosedListLocations[reverseLocationHash] = reverseNextNode;
             
-            const reverseSurroundingLocations: Vector3[] = CuboidRegion.FromCenterLocation(reverseNextNode.Block.location, 1, true).GetAllLocationsInRegion();
-            reverseSurroundingBlocks = []
+            let reverseSurroundingLocations: Vector3[];
+            if(!this.Options.AllowYAxisFlood) {
+                reverseSurroundingLocations = CuboidRegion.FromCenterLocation(reverseNextNode.Block.location, 1, true).GetAllLocationsInRegion();
+            } else {
+                reverseSurroundingLocations = CuboidRegion.GetAdjacentPositions(reverseNextNode.Block.location, 1);
+            }
+            reverseSurroundingBlocks = [];
     
             const safetyCheckOptions = new BlockSafetyCheckerOptions();
             safetyCheckOptions.TagsToConsiderPassable = this.Options.TagsToConsiderPassable;
@@ -154,9 +165,14 @@ export class BidirectionalAStar{
     
                         if (safetyCheckResult.IsSafe) {
                             if(safetyCheckOptions.AllowYAxisFlood) {
+                                const belowBlock = blockAtLocation.below();
+                                const upBlock = blockAtLocation.above();
+                                const bottomSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(belowBlock!, safetyCheckOptions);
+                                const topSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(upBlock!, safetyCheckOptions);
+                                if(bottomSafetyCheckResult.IsSafe) surroundingBlocks.push(belowBlock!);
+                                if(topSafetyCheckResult.IsSafe) surroundingBlocks.push(upBlock!);
                                 surroundingBlocks.push(blockAtLocation);
-                                surroundingBlocks.push(<Block>blockAtLocation.below(1));
-                                surroundingBlocks.push(<Block>blockAtLocation.above(1));
+                                continue;
                             }
                             if (safetyCheckResult.CanSafelyFallFrom) {
                                 surroundingBlocks.push(<Block>blockAtLocation.below(1));
@@ -185,8 +201,6 @@ export class BidirectionalAStar{
                     continue;
                 }
 
-                this.SetDebugBlock(surroundingBlock);
-
                 const IndexOfExistingNodeInReversedOpenList = this.GetIndexOfNodeIfInList(surroundingNode, reverseOpenList);
                 if(IndexOfExistingNodeInReversedOpenList){
                     const forwardSurroundingNode = surroundingNode;
@@ -208,6 +222,8 @@ export class BidirectionalAStar{
                     return goalNodePromiseResolve(nodeList);
                 }
     
+                this.SetDebugBlock(surroundingBlock);
+
                 const indexOfExistingNodeInOpenList: number | null = this.GetIndexOfNodeIfInList(surroundingNode, openList);
                 if (indexOfExistingNodeInOpenList === null) {
                     openList.push(surroundingNode);
@@ -236,9 +252,14 @@ export class BidirectionalAStar{
     
                         if (safetyCheckResult.IsSafe) {
                             if(safetyCheckOptions.AllowYAxisFlood) {
+                                const belowBlock = blockAtLocation.below();
+                                const upBlock = blockAtLocation.above();
+                                const bottomSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(belowBlock!, safetyCheckOptions);
+                                const topSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(upBlock!, safetyCheckOptions);
+                                if(bottomSafetyCheckResult.IsSafe) reverseSurroundingBlocks.push(belowBlock!);
+                                if(topSafetyCheckResult.IsSafe) reverseSurroundingBlocks.push(upBlock!);
                                 reverseSurroundingBlocks.push(blockAtLocation);
-                                reverseSurroundingBlocks.push(<Block>blockAtLocation.below(1));
-                                reverseSurroundingBlocks.push(<Block>blockAtLocation.above(1));
+                                continue;
                             }
                             if (safetyCheckResult.CanSafelyFallFrom) {
                                 reverseSurroundingBlocks.push(<Block>blockAtLocation.below(1));
@@ -267,8 +288,6 @@ export class BidirectionalAStar{
                     continue;
                 }
 
-                this.SetDebugBlock(reverseSurroundingBlock);
-
                 const reversedIndexOfExistingNodeInOpenList = this.GetIndexOfNodeIfInList(reverseSurroundingNode, openList);
                 if(reversedIndexOfExistingNodeInOpenList){
                     const forwardSurroundingNode = openList[reversedIndexOfExistingNodeInOpenList];
@@ -289,6 +308,8 @@ export class BidirectionalAStar{
                     nodeList = nodeList.reverse();
                     return goalNodePromiseResolve(nodeList);
                 }
+
+                this.SetDebugBlock(reverseSurroundingBlock);
     
                 const reverseIndexOfExistingNodeInReversedOpenList: number | null = this.GetIndexOfNodeIfInList(reverseSurroundingNode, reverseOpenList);
                 if (reverseIndexOfExistingNodeInReversedOpenList === null) {

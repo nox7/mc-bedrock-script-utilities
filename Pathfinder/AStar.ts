@@ -19,7 +19,6 @@ export class AStar{
     private EndBlock: Block;
     private TotalDebugBlocksCreated: Set<Block>;
 
-
     public constructor(options: AStarOptions){
         this.Options = options;
         this.TotalDebugBlocksCreated = new Set();
@@ -29,14 +28,15 @@ export class AStar{
         try{
             startBlock = this.Options.Dimension.getBlock(this.Options.StartLocation);
             endBlock = this.Options.Dimension.getBlock(this.Options.GoalLocation);
-        }catch(e){}
-        
+        }catch(e){
+        }
         if (startBlock !== undefined && endBlock !== undefined){
             this.StartBlock = startBlock;
             this.EndBlock = endBlock;
         }else{
             throw "Start and End must point to valid and loaded blocks.";
         }
+        
     }
 
     /**
@@ -81,7 +81,6 @@ export class AStar{
 
         // Iterate until the openList is exhausted of all options
         while (openList.length > 0){
-
             // Check if we have considered too many nodes and the path may be too difficult or impossible to get to
             if (Object.keys(closedListLocations).length >= this.Options.MaximumNodesToConsider){
                 this.ClearDebugBlocks();
@@ -105,7 +104,12 @@ export class AStar{
             closedListLocations[locationHash] = nextNode;
 
             // Get all the adjacent locations surrounding the nextNode.Block
-            const surroundingLocations: Vector3[] = CuboidRegion.FromCenterLocation(nextNode.Block.location, 1, true).GetAllLocationsInRegion();
+            let surroundingLocations: Vector3[];
+            if(!this.Options.AllowYAxisFlood) {
+                surroundingLocations = CuboidRegion.FromCenterLocation(nextNode.Block.location, 1, true).GetAllLocationsInRegion();
+            } else {
+                surroundingLocations = CuboidRegion.GetAdjacentPositions(nextNode.Block.location, 1);
+            }
             const surroundingBlocks: Block[] = [];
 
             // Load block safety options
@@ -130,12 +134,16 @@ export class AStar{
                         // Check it is safe to move to, fall down from, or jump ontop of
                         const safetyCheckResult: BlockSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(blockAtLocation, safetyCheckOptions);
 
-                        // Adrian - The only thing we need is to make it move anywhere, and just add collision detection.
                         if (safetyCheckResult.IsSafe){
                             if(safetyCheckOptions.AllowYAxisFlood) {
+                                const belowBlock = blockAtLocation.below();
+                                const upBlock = blockAtLocation.above();
+                                const bottomSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(belowBlock!, safetyCheckOptions);
+                                const topSafetyCheckResult = BlockSafetyCheckerUtility.RunBlockSafetyCheck(upBlock!, safetyCheckOptions);
+                                if(bottomSafetyCheckResult.IsSafe) surroundingBlocks.push(belowBlock!);
+                                if(topSafetyCheckResult.IsSafe) surroundingBlocks.push(upBlock!);
                                 surroundingBlocks.push(blockAtLocation);
-                                surroundingBlocks.push(<Block>blockAtLocation.below(1));
-                                surroundingBlocks.push(<Block>blockAtLocation.above(1));
+                                continue;
                             }
                             // Check if it's safe to fall from
                             if (safetyCheckResult.CanSafelyFallFrom){
@@ -166,19 +174,19 @@ export class AStar{
                 };
                 const surroundingBlockLocationHash: string = Vector.toString(surroundingBlock.location);
 
-                // Creates a path traces using Structure Void whenever in debug mode
-                this.SetDebugBlock(surroundingBlock);
-
+                
                 // Check if this block is the end block
                 if (Vector.equals(surroundingBlock, this.EndBlock)){
                     return goalNodePromiseResolve(surroundingNode);
                 }
-
+                
                 // Check if the block is in the closed list
                 if (surroundingBlockLocationHash in closedListLocations){
                     // Skip this block
                     continue;
                 }
+                // Creates a path traces using Structure Void whenever in debug mode
+                this.SetDebugBlock(surroundingBlock);
 
                 // Check if the block is already in the open list
                 const indexOfExistingNodeInOpenList: number | null = this.GetIndexOfNodeIfInList(surroundingNode, openList);

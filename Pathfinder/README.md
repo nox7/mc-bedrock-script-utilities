@@ -32,6 +32,8 @@ const blockPath: Block[] = await aStar.Pathfind();
 const options: AStarOptions = new AStarOptions({x:0, y:0, z:0}, {x: 10, y:0, z:10}, world.getDimension("overworld"));
 options.TypeIdsToConsiderPassable = ["minecraft:air"];
 options.TypeIdsThatCannotBeJumpedOver = ["minecraft:oak_fence"];
+options.AllowYAxisFlood = false; // Toggle good for flying or aquatic mobs
+options.MaximumNodesToConsider = 300;
 
 let aStar: BidirectionalAStar;
 try{

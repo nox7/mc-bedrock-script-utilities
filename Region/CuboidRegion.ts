@@ -21,6 +21,30 @@ export default class CuboidRegion{
         return new CuboidRegion(corner1, corner2, cuboidRadius, isVerticallyFlat);
     }
 
+    public static GetAdjacentPositions(centerLocation: Vector3, cuboidRadius: number): Vector3[] {
+        const positions: Vector3[] = [];
+        
+        const directions = [
+            { x: 0, y: 1, z: 0 },  // Up
+            { x: 0, y: -1, z: 0 }, // Down
+            { x: 1, y: 0, z: 0 },  // Right
+            { x: -1, y: 0, z: 0 }, // Left
+            { x: 0, y: 0, z: 1 },  // Forward
+            { x: 0, y: 0, z: -1 }  // Backward
+        ];
+    
+        for (const direction of directions) {
+            positions.push({
+                x: centerLocation.x + direction.x * cuboidRadius,
+                y: centerLocation.y + direction.y * cuboidRadius,
+                z: centerLocation.z + direction.z * cuboidRadius,
+            });
+        }
+    
+        return positions;
+    }
+    
+
     /**
      * Gets a list of Vector3s that lie on the outer edge of a cube at the centerLocation with the provided cuboidRadius
      * @param centerLocation

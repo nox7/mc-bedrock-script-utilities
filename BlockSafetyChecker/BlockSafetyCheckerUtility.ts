@@ -15,6 +15,12 @@ export class BlockSafetyCheckerUtility{
     public static RunBlockSafetyCheck(block: Block, options: BlockSafetyCheckerOptions): BlockSafetyCheckResult{
         // The block should have been checked for isValid() before calling this
         // We will assume it is valid
+        if(options.AllowYAxisFlood) {
+            const result = new BlockSafetyCheckResult();
+            result.IsSafe = BlockSafetyCheckerUtility.IsPassable(block, options);
+            return result;
+        }
+
         if (BlockSafetyCheckerUtility.IsPassable(block, options)){
             // block is passable. Is it safe below it?
             let blockBelow: Block | undefined;
@@ -22,11 +28,6 @@ export class BlockSafetyCheckerUtility{
                 blockBelow = block.below(1);
             }catch(e){}
             if (blockBelow !== undefined){
-                if(options.AllowYAxisFlood) {
-                    const result: BlockSafetyCheckResult = new BlockSafetyCheckResult();
-                    result.IsSafe = true;
-                    return result;
-                }
                 if (BlockSafetyCheckerUtility.IsPassable(blockBelow, options)){
                     // Check the block even further below
                     let blockFurtherBelow: Block | undefined;
